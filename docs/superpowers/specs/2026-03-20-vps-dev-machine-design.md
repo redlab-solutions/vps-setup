@@ -75,7 +75,7 @@ Transformar um VPS Contabo (Ubuntu 24.04, 8GB RAM, 72GB disco) em uma máquina d
 - Imagem: `lscr.io/linuxserver/webtop:alpine-xfce`
 - Porta interna: 3000 (KasmVNC)
 - Volume: `/home/lincoln/obsidian-vault → /config/obsidian-vault`
-- Obsidian instalado via AppImage após primeiro boot
+- Obsidian instalado manualmente via AppImage após primeiro boot do container (passo interativo — requer abrir o browser, acessar o Webtop e executar o instalador dentro do container)
 - Alpine XFCE: ~250MB RAM em uso
 - restart: unless-stopped
 
@@ -83,7 +83,8 @@ Transformar um VPS Contabo (Ubuntu 24.04, 8GB RAM, 72GB disco) em uma máquina d
 - Serviço systemd do usuário `lincoln`
 - Executa: `code tunnel --accept-server-license-terms --name contabo-dev`
 - Acessa `/home/lincoln/workspace`
-- Autenticação via GitHub (primeira execução manual)
+- Autenticação via GitHub (primeira execução manual, fora do systemd)
+- Nome do tunnel: `contabo-dev` — se já existir no GitHub, deletar o tunnel anterior no portal de configurações antes de recriar
 - WantedBy: default.target
 
 ---
@@ -111,7 +112,7 @@ Transformar um VPS Contabo (Ubuntu 24.04, 8GB RAM, 72GB disco) em uma máquina d
 | Aspecto | Decisão |
 |---|---|
 | Acesso externo | Apenas via Tailscale |
-| Porta 22 pública | Desabilitada após setup completo |
+| Porta 22 pública | Bloqueada via `ufw` após setup completo |
 | TLS | Let's Encrypt via DNS-01 (sem porta 80 pública) |
 | Caddy bind | Exclusivo no IP Tailscale |
 | Secrets | Apenas em `.env` local, nunca commitado |
@@ -134,7 +135,7 @@ O vault Obsidian fica apenas em disco local. Estratégia de backup deve ser defi
 6. **Webtop** — subir container; acessar via browser; instalar Obsidian AppImage; configurar vault
 7. **code-server** — subir container; validar acesso em `code.redlabsolutions.com.br`
 8. **Remote Tunnels** — instalar VS Code CLI; criar unit systemd; autenticar via GitHub; validar no desktop
-9. **Hardening SSH** — desabilitar acesso SSH público (porta 22 via IP público)
+9. **Hardening SSH + Firewall** — bloquear portas 80/443/22 no IP público via `ufw` (`ufw deny 80`, `ufw deny 443`, `ufw deny 22`); acesso SSH mantido via Tailscale IP
 
 ---
 
