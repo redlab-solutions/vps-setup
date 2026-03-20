@@ -1,0 +1,21 @@
+{
+    email lincoln@redlabsolutions.com.br
+    acme_dns godaddy {
+        api_key {env.GODADDY_API_KEY}
+        api_secret {env.GODADDY_API_SECRET}
+    }
+}
+
+code.redlabsolutions.com.br {
+    bind {env.TAILSCALE_IP}
+    reverse_proxy code-server:8443 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+    }
+}
+
+obsidian.redlabsolutions.com.br {
+    bind {env.TAILSCALE_IP}
+    reverse_proxy webtop:3000
+}
