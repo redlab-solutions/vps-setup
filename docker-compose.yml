@@ -14,8 +14,7 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     environment:
-      - GODADDY_API_KEY=${GODADDY_API_KEY}
-      - GODADDY_API_SECRET=${GODADDY_API_SECRET}
+      - GODADDY_API_TOKEN=${GODADDY_API_TOKEN}
       - TAILSCALE_IP=${TAILSCALE_IP}
     networks:
       - proxy

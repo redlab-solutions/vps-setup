@@ -1,9 +1,6 @@
 {
     email lincoln@redlabsolutions.com.br
-    acme_dns godaddy {
-        api_key {env.GODADDY_API_KEY}
-        api_secret {env.GODADDY_API_SECRET}
-    }
+    acme_dns godaddy {env.GODADDY_API_TOKEN}
 }
 
 code.redlabsolutions.com.br {
