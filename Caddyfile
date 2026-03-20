@@ -5,7 +5,7 @@
 
 code.redlabsolutions.com.br {
     bind {env.TAILSCALE_IP}
-    reverse_proxy code-server:8443 {
+    reverse_proxy localhost:8443 {
         transport http {
             tls_insecure_skip_verify
         }
@@ -14,5 +14,5 @@ code.redlabsolutions.com.br {
 
 obsidian.redlabsolutions.com.br {
     bind {env.TAILSCALE_IP}
-    reverse_proxy webtop:3000
+    reverse_proxy localhost:3000
 }

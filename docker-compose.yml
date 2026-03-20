@@ -5,10 +5,7 @@ services:
       dockerfile: Dockerfile.caddy
     container_name: caddy
     restart: unless-stopped
-    ports:
-      - "${TAILSCALE_IP}:80:80"
-      - "${TAILSCALE_IP}:443:443"
-      - "${TAILSCALE_IP}:443:443/udp"
+    network_mode: host
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
@@ -16,13 +13,13 @@ services:
     environment:
       - GODADDY_API_TOKEN=${GODADDY_API_TOKEN}
       - TAILSCALE_IP=${TAILSCALE_IP}
-    networks:
-      - proxy
 
   code-server:
     image: lscr.io/linuxserver/code-server:latest
     container_name: code-server
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:8443:8443"
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -33,8 +30,6 @@ services:
     volumes:
       - /home/lincoln/workspace:/config/workspace
       - codeserver_config:/config
-    networks:
-      - proxy
 
   webtop:
     image: lscr.io/linuxserver/webtop:ubuntu-lxqt
@@ -42,6 +37,8 @@ services:
     restart: unless-stopped
     security_opt:
       - seccomp:unconfined
+    ports:
+      - "127.0.0.1:3000:3000"
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -51,8 +48,6 @@ services:
       - /home/lincoln/obsidian-vault:/config/obsidian-vault
       - webtop_config:/config
     shm_size: "1gb"
-    networks:
-      - proxy
 
 volumes:
   caddy_data:
@@ -60,6 +55,3 @@ volumes:
   codeserver_config:
   webtop_config:
 
-networks:
-  proxy:
-    driver: bridge
