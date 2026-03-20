@@ -38,7 +38,7 @@ services:
       - proxy
 
   webtop:
-    image: lscr.io/linuxserver/webtop:alpine-xfce
+    image: lscr.io/linuxserver/webtop:ubuntu-lxqt
     container_name: webtop
     restart: unless-stopped
     security_opt:
