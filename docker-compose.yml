@@ -1,0 +1,66 @@
+services:
+  caddy:
+    build:
+      context: .
+      dockerfile: Dockerfile.caddy
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "${TAILSCALE_IP}:80:80"
+      - "${TAILSCALE_IP}:443:443"
+      - "${TAILSCALE_IP}:443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      - GODADDY_API_KEY=${GODADDY_API_KEY}
+      - GODADDY_API_SECRET=${GODADDY_API_SECRET}
+      - TAILSCALE_IP=${TAILSCALE_IP}
+    networks:
+      - proxy
+
+  code-server:
+    image: lscr.io/linuxserver/code-server:latest
+    container_name: code-server
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=America/Sao_Paulo
+      - PASSWORD=${CODESERVER_PASSWORD}
+      - HASHED_PASSWORD=
+      - SUDO_PASSWORD=
+    volumes:
+      - /home/lincoln/workspace:/config/workspace
+      - codeserver_config:/config
+    networks:
+      - proxy
+
+  webtop:
+    image: lscr.io/linuxserver/webtop:alpine-xfce
+    container_name: webtop
+    restart: unless-stopped
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=America/Sao_Paulo
+      - PASSWORD=${WEBTOP_PASSWORD}
+    volumes:
+      - /home/lincoln/obsidian-vault:/config/obsidian-vault
+      - webtop_config:/config
+    shm_size: "1gb"
+    networks:
+      - proxy
+
+volumes:
+  caddy_data:
+  caddy_config:
+  codeserver_config:
+  webtop_config:
+
+networks:
+  proxy:
+    driver: bridge
