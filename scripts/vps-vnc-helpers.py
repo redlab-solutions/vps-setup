@@ -185,9 +185,11 @@ if __name__ == "__main__":
 
     elif cmd == "config":
         config = load_config()
-        key = sys.argv[2] if len(sys.argv) > 2 else ""
-        value = sys.argv[3] if len(sys.argv) > 3 else ""
-        if key and value:
+        subcmd = sys.argv[2] if len(sys.argv) > 2 else ""
+        if subcmd == "set" and len(sys.argv) >= 5:
+            # config set key value
+            key = sys.argv[3]
+            value = sys.argv[4]
             config[key] = value
             save_config(config)
             print(f"config:{key}={value}")
