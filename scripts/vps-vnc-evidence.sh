@@ -2,10 +2,10 @@
 # vps-vnc-evidence.sh — Collect screenshot evidence from webtop container
 # Usage: ./vps-vnc-evidence.sh <session_dir_name> <label>
 #
-# IMPORTANT: Uses playwright-cli which captures the EXISTING authenticated
-# chromium session (:0), NOT a new headless instance.
+# Captures the EXISTING authenticated X11 session (:0) using xwd + imagemagick.
+# This IS the desktop the user sees in VNC — not a new headless browser instance.
 #
-# Requires: playwright-cli installed in webtop container
+# Requires: xwd and imagemagick (convert) on host
 
 set -e
 
@@ -22,17 +22,19 @@ EVIDENCE_DIR="/home/lincoln/vps-setup/debug-sessions/${SESSION_DIR}"
 mkdir -p "$EVIDENCE_DIR"
 
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-TMP_FILE="/tmp/evidence_${TIMESTAMP}.png"
+TMP_XWD="/tmp/evidence_${TIMESTAMP}.xwd"
 DEST_FILE="${EVIDENCE_DIR}/${LABEL}_${TIMESTAMP}.png"
 
-# playwright-cli captures the EXISTING authenticated chromium session (:0)
-# This is what the user sees in VNC — not a headless new instance
-docker exec webtop npx playwright-cli screenshot "about:blank" --output "$TMP_FILE" 2>/dev/null
+# Capture existing X11 session (:0) as user abc — this is the authenticated desktop
+sudo docker exec --user abc webtop bash -c "DISPLAY=:0 xwd -root -screen -out ${TMP_XWD}" 2>/dev/null
 
-if [ -f "/proc/$(docker inspect --format '{{.State.Pid}}' webtop)/root${TMP_FILE}" ] || docker exec test -f "$TMP_FILE" 2>/dev/null; then
-    docker cp "webtop:$TMP_FILE" "$DEST_FILE"
-    echo "$DEST_FILE"
+# Convert XWD to PNG on host (imagemagick)
+if [ -f "/tmp/${TMP_XWD}" ] || sudo docker cp "webtop:${TMP_XWD}" "${TMP_XWD}" 2>/dev/null; then
+    # Ensure we have the file locally
+    sudo docker cp "webtop:${TMP_XWD}" "${TMP_XWD}" 2>/dev/null || true
+    /usr/bin/convert "${TMP_XWD}" "${DEST_FILE}" 2>/dev/null && sudo rm -f "${TMP_XWD}" || true
+    echo "${DEST_FILE}"
 else
-    echo "ERROR: playwright-cli screenshot failed" >&2
+    echo "ERROR: xwd capture failed" >&2
     exit 1
 fi
