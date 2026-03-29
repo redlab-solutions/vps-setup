@@ -39,6 +39,7 @@ services:
       - seccomp:unconfined
     ports:
       - "127.0.0.1:3000:3000"
+      - "127.0.0.1:5900:5900"
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
