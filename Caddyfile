@@ -14,6 +14,5 @@ obsidian.redlabsolutions.com.br {
 }
 
 llm-proxy.redlabsolutions.com.br {
-    bind {env.TAILSCALE_IP}
     reverse_proxy http://localhost:20128
 }
