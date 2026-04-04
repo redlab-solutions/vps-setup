@@ -8,19 +8,19 @@
 
 ```bash
 # Subir
-docker compose -f docker-compose.omniroute.yml up -d
+docker compose up -d omniroute
 
 # Parar
-docker compose -f docker-compose.omniroute.yml down
+docker compose stop omniroute
 
 # Ver logs
-docker compose -f docker-compose.omniroute.yml logs -f
+docker compose logs -f omniroute
 ```
 
 ## Update
 
 ```bash
-docker compose -f docker-compose.omniroute.yml pull && docker compose -f docker-compose.omniroute.yml up -d
+docker compose pull omniroute && docker compose up -d omniroute
 ```
 
 ## Recarregar Caddy
@@ -51,5 +51,5 @@ curl -H "Authorization: Bearer or_live_<SUA_KEY>" \
 ```bash
 # Editar o .env e trocar OMNIROUTE_INITIAL_PASSWORD
 # Depois recriar o container:
-docker compose -f docker-compose.omniroute.yml up -d --force-recreate
+docker compose up -d --force-recreate omniroute
 ```
