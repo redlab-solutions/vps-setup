@@ -1,5 +1,8 @@
 .env
+.env.save
 *.crt
 *.key
 caddy_data/
+data/
+debug-sessions/
 .superpowers/

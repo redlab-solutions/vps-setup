@@ -61,6 +61,15 @@ services:
       - INITIAL_PASSWORD=${OMNIROUTE_INITIAL_PASSWORD}
       - DATA_DIR=/data
       - APP_LOG_TO_FILE=true
+      - APP_LOG_RETENTION_DAYS=3
+      - APP_LOG_MAX_FILES=5
+      - APP_LOG_MAX_FILE_SIZE=10485760
+      - CALL_LOG_MAX_ENTRIES=200
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     volumes:
       - ./data/omniroute:/data
     healthcheck:
