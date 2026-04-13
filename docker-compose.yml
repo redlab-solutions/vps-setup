@@ -60,19 +60,6 @@ services:
       retries: 3
       start_period: 40s
 
-  camofox:
-    image: jo-inc/camofox-browser
-    container_name: camofox
-    restart: unless-stopped
-    network_mode: host
-    environment:
-      - CAMOFOX_PORT=9377
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
 volumes:
   caddy_data:
   caddy_config:
