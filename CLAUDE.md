@@ -27,6 +27,11 @@ docker compose pull omniroute && docker compose up -d omniroute  # Update OmniRo
 - OmniRoute healthcheck uses `/` (root), not `/api/health` (requires auth → 401)
 - UFW allows 80/443 on all interfaces (Cloudflare needs public access for llm-proxy)
 - code-server and webtop remain Tailscale-only (bind TAILSCALE_IP)
+- OmniRoute v3.5.5+ required — v3.5.1 had bug corrupting payload after fallbacks (400 "Improperly formed request" on Kiro provider)
+- OmniRoute ModelSync returns 400 for Kiro connections at startup — this is normal (Kiro has no model listing endpoint), requests still work
+- OmniRoute log retention: `APP_LOG_RETENTION_DAYS=3`, `CALL_LOG_MAX_ENTRIES=200` — prevents unbounded growth (was 873 MB in 4 days)
+- Docker logs use `json-file` driver with rotation (`max-size: 10m`, `max-file: 3`)
+- `data/`, `debug-sessions/`, `.env.save` are gitignored
 
 ## Vault
 Sessões em: /home/lincoln/obsidian-vault/Áreas/Dev/Projetos/vps-setup/Sessões/

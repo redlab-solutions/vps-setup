@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "curl -s 'http://localhost:37777/api/context/inject?project=vps-setup' 2>/dev/null || echo '# $CMEM vps-setup unavailable'"
+          }
+        ]
+      }
+    ]
+  }
+}
