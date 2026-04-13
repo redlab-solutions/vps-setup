@@ -31,25 +31,6 @@ services:
       - /home/lincoln/workspace:/config/workspace
       - codeserver_config:/config
 
-  webtop:
-    image: lscr.io/linuxserver/webtop:ubuntu-lxqt
-    container_name: webtop
-    restart: unless-stopped
-    security_opt:
-      - seccomp:unconfined
-    ports:
-      - "127.0.0.1:3000:3000"
-      - "127.0.0.1:5900:5900"
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=America/Sao_Paulo
-      - PASSWORD=${WEBTOP_PASSWORD}
-    volumes:
-      - /home/lincoln/obsidian-vault:/config/obsidian-vault
-      - webtop_config:/config
-    shm_size: "1gb"
-
   omniroute:
     image: diegosouzapw/omniroute:latest
     container_name: omniroute
@@ -79,9 +60,22 @@ services:
       retries: 3
       start_period: 40s
 
+  camofox:
+    image: jo-inc/camofox-browser
+    container_name: camofox
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - CAMOFOX_PORT=9377
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
 volumes:
   caddy_data:
   caddy_config:
   codeserver_config:
-  webtop_config:
+
 
