@@ -1,23 +1,6 @@
-[Unit]
-Description=Hermes Agent Telegram Gateway
-After=network-online.target camofox.service
-Wants=network-online.target
-
-[Service]
-Type=simple
-User=lincoln
-EnvironmentFile=/home/lincoln/.hermes/.env
-ExecStart=/home/lincoln/.local/bin/hermes gateway start
-Restart=on-failure
-RestartSec=10
-StandardOutput=journal
-StandardError=journal
-
-# Security
-NoNewPrivileges=true
-ProtectSystem=strict
-ReadWritePaths=/home/lincoln /tmp
-PrivateTmp=true
-
-[Install]
-WantedBy=multi-user.target
+# Hermes manages its own user-level systemd service (hermes-gateway.service).
+# To start/stop: use `hermes gateway start` or `systemctl --user start hermes-gateway`
+# This file is kept for reference only — do NOT install as system service.
+#
+# Hermes auto-creates: ~/.config/systemd/user/hermes-gateway.service
+# Check status: systemctl --user status hermes-gateway

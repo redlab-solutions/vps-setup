@@ -11,9 +11,9 @@ docker compose restart caddy     # Reload Caddy config after Caddyfile changes
 docker compose pull omniroute && docker compose up -d omniroute  # Update OmniRoute
 
 # Hermes Agent
-sudo systemctl status hermes-agent    # Check gateway status
-sudo journalctl -u hermes-agent -f    # Tail gateway logs
-sudo systemctl restart hermes-agent   # Restart gateway
+systemctl --user status hermes-gateway    # Check gateway status
+journalctl --user -u hermes-gateway -f    # Tail gateway logs
+systemctl --user restart hermes-gateway   # Restart gateway
 hermes doctor                         # Run diagnostics
 hermes chat -q "message"              # One-off chat (CLI)
 hermes model                          # Switch LLM provider/model
@@ -47,10 +47,12 @@ sudo systemctl restart camofox        # Restart browser server
 - Docker logs use `json-file` driver with rotation (`max-size: 10m`, `max-file: 3`)
 - `data/`, `debug-sessions/`, `.env.save` are gitignored
 - Hermes config lives in `~/.hermes/` (not in this repo) — `.env` there has API keys
-- Hermes Telegram gateway runs as systemd service — not in Docker
+- Hermes manages its own user-level systemd service (`hermes-gateway`) — use `systemctl --user` to manage, NOT system-level
 - Hermes workspace is `/home/lincoln/workspace` — same as code-server
 - Camofox runs natively on port 9377 — Hermes browser tools route through it
+- Camofox runs natively on port 9377 — Hermes browser tools route through it
 - Camofox idle memory: ~50 MB. Launches browser on demand, auto-shuts down after 5 min idle
+- Camofox needs Node.js v22+ (uses nvm v24 at `/home/lincoln/.nvm/versions/node/v24.14.0/bin/node`)
 - Hermes uses z.ai/GLM-5-turbo as LLM provider (configurable with `hermes model`)
 - `TELEGRAM_BOT_TOKEN` is in `~/.hermes/.env` — Hermes Telegram bot is separate from the Claude Code Telegram plugin
 
