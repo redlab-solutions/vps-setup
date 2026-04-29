@@ -16,15 +16,14 @@ A VPS já tem 80% do que o sistema de Super Skills propõe, mas de forma fragmen
 
 | Bucket | Conteúdo | Sistema | Regra |
 |---|---|---|---|
-| **Profile** | Foco atual, decisões pendentes, preferências | Global: `~/.claude/projects/-home-lincoln/memory/user_profile.md` (ampliar seção existente) | Lido toda sessão. Mutável. < 50 linhas. |
+| **Profile** | Foco atual, decisões pendentes, preferências | `~/.claude/CLAUDE.md` (user-level — carregado em TODA sessão, independentemente do diretório) | Mutável. < 50 linhas. Seção dedicada no fim do arquivo. |
 | **Knowledge** | Fatos imutáveis: arquitetura, configs, runbooks | `CLAUDE.md` + `memory/project_*.md` + `memory/reference_*.md` | Atualizado via preserve. Consultado quando relevante. |
 | **Session Log** | O que aconteceu numa sessão — contexto temporal | `CC-Session-Logs/` + `context-mode` FTS5 | Auto-salvo via compress. Buscável via ctx_search. |
 | **Feedback** | Lições aprendidas, "do instead", padrões | `memory/feedback_*.md` + `.claude/napkin.md` | Acumulado ao longo do tempo. Napkin editado manualmente via `/end-session`. |
 
 ### Mudanças concretas
 
-- `~/.claude/projects/-home-lincoln/memory/user_profile.md` — ampliar com seções de Foco Atual e Decisões Pendentes
-- `~/.claude/projects/-home-lincoln/memory/MEMORY.md` — adicionar entrada para o profile ampliado
+- `~/.claude/CLAUDE.md` — adicionar seção `## Profile Estratégico` com Foco Atual e Decisões Pendentes. Este arquivo é carregado em TODA sessão, independentemente do diretório de trabalho (user-level CLAUDE.md).
 - Nenhum sistema novo ou migração — só regras claras de governança
 
 ---
@@ -44,7 +43,8 @@ A VPS já tem 80% do que o sistema de Super Skills propõe, mas de forma fragmen
                 Se CLAUDE.md > 280 linhas → auto-archive (move seções antigas para CLAUDE-Archive.md conforme lógica do preserve Step 6)
 
   2. [napkin]   Pergunta: "Alguma lição desta sessão?"
-                Se sim → edita {project_root}/.claude/napkin.md diretamente (adiciona item com data + "Do instead", mantém max 10 por categoria, remove itens mais antigos se cheio)
+                Se sim → edita {project_root}/.claude/napkin.md diretamente (adiciona item com data + "Do instead")
+                Nota: o napkin skill original não impõe limite de itens — "the agent designs the initial structure and adapts it to the project's domain". **Decisão de design:** o `/end-session` NÃO impõe limite artificial. O napkin skill já cura o conteúdo durante o trabalho.
                 Se não → pula
                 Nota: skill napkin (~/.claude/skills/napkin/) já lê o .claude/napkin.md a cada sessão e escreve continuamente durante o trabalho. O end-session só garante captura final se houver lição não registrada.
 
@@ -52,7 +52,7 @@ A VPS já tem 80% do que o sistema de Super Skills propõe, mas de forma fragmen
                 Dual-write: local (CC-Session-Logs/) + vault (Sessões/)
                 Cria/atualiza daily note com link (já integrado no compress Step 5)
 
-  4. [profile]  Atualiza profile.md se houver mudança em foco ou decisões
+  4. [profile]  Atualiza ~/.claude/CLAUDE.md (seção Profile Estratégico) se houver mudança em foco ou decisões
 
   5. [summary]  Mostra: "Preservado X em CLAUDE.md, Y no napkin, log em Z"
                 Sugere: "Roda /compact quando estiver pronto"
@@ -79,36 +79,31 @@ O preserve auto-detecta sem perguntar:
 
 ## 3. Profile — Memória Estratégica Global
 
-**Arquivo:** `/home/lincoln/.claude/projects/-home-lincoln/memory/user_profile.md` (já existe, ampliar)
+**Arquivo:** `~/.claude/CLAUDE.md` (user-level — carregado em TODA sessão, independentemente do diretório)
 
-O profile é **global** (não por-projeto). Toda sessão em qualquer projeto lê o mesmo profile. Já existe com conteúdo básico — ampliar com seções estratégicas.
+Claude Code carrega memória por escopo de projeto (`~/.claude/projects/-home-lincoln-vps-setup/memory/` só é visível em `~/vps-setup/`). O user-level `~/.claude/CLAUDE.md` é o único mecanismo que é sempre carregado, em qualquer diretório. É o local correto para o profile estratégico global.
+
+Adicionar seção ao final do `~/.claude/CLAUDE.md` existente:
 
 ```markdown
----
-name: user_profile
-description: Lincoln's role, preferences, and strategic focus — read every session
-type: user
----
+## Profile Estratégico
 
-## Perfil
-[conteúdo existente: desenvolvedor, VPS Contabo, português BR, etc.]
-
-## Foco Atual
+### Foco Atual
 - [1-2 projetos/áreas ativos com contexto mínimo]
 
-## Decisões Pendentes
+### Decisões Pendentes
 - [Decisões abertas que futuras sessões precisam saber]
 
-## Última Atualização: YYYY-MM-DD
+### Última Atualização: YYYY-MM-DD
 ```
 
 ### Governação
 
 - `/end-session` atualiza automaticamente se houver mudanças em foco ou decisões
-- Mantém < 50 linhas — itens resolvidos saem
-- Referenciado no `MEMORY.md` global (`~/.claude/projects/-home-lincoln/memory/MEMORY.md`)
+- Mantém < 50 linhas no total — itens resolvidos saem
 - Seções vazias = sem mudança desde última atualização
-- **Não é por-projeto** — decisões de foco são globais, afetam todos os projetos
+- `user_profile.md` no memory de cada projeto mantém papel atual (preferências técnicas por-projeto) — não é afetado
+- O profile em `~/.claude/CLAUDE.md` perde frontmatter/type metadata — aceitável pois é conteúdo estratégico, não queryável por tipo
 
 ---
 
@@ -120,7 +115,7 @@ type: user
 
 **Arquivo:** `.claude/settings.json` (projeto) — adicionar ao array `hooks.UserPromptSubmit`
 
-**Padrões detectados (regex com boundary, final da mensagem):** `\b(tchau|bye|sair|encerrar|goodbye)\s*[.!?]?\s*$` e `\b(fim|até mais|done for today|isso é tudo|por hoje é só)\b` — detecta apenas padrões de despedida no final da mensagem, evitando falsos positivos como "fim de semana" ou "até que".
+**Padrões detectados (regex unificado, ancorado ao final da mensagem):** `\b(tchau|bye\b.*|sair|encerrar|goodbye|fim|até\s+mais|done\s+for\s+today|isso\s+é\s+tudo|por\s+hoje\s+é\s+só)\s*[.!?]?\s*$` — todos os padrões ancorados com `$`, evitando falsos positivos como "fim de semana" ou "até que".
 
 **Comportamento:** Exibe mensagem sugerindo `/end-session`. Não bloqueia — o usuário pode ignorar.
 
@@ -169,7 +164,7 @@ Transformar o personal-data-connectors num MCP server com tools: `search_calenda
 | # | O quê | Arquivo | Esforço |
 |---|---|---|---|
 | 1 | `/end-session` skill | `~/.claude/commands/end-session.md` | 1-2h |
-| 2 | Profile ampliado | `~/.claude/projects/-home-lincoln/memory/user_profile.md` + `MEMORY.md` update | 15min |
+| 2 | Profile ampliado | `~/.claude/CLAUDE.md` (seção Profile Estratégico) | 15min |
 | 3 | Hook de sugestão | `.claude/settings.json` hooks | 15min |
 | 4 | `/context` skill | `~/.claude/commands/context.md` | 30min |
 
@@ -185,9 +180,9 @@ Transformar o personal-data-connectors num MCP server com tools: `search_calenda
 
 ---
 
-## Notas de Correção (Review v2)
+## Notas de Correção
 
-Correções aplicadas após review do usuário:
+### Review v2
 
 1. **Profile** → global (`~/.claude/projects/-home-lincoln/memory/user_profile.md`), não por-projeto. Amplia arquivo existente.
 2. **`python main.py --pipeline daily`** → CLI args não verificados. Pipeline tem deps quebradas (`azure` module). Skill marcado com bloqueador.
@@ -196,3 +191,9 @@ Correções aplicadas após review do usuário:
 5. **Hook regex** → adicionado boundary e detecção no final da mensagem para evitar falsos positivos.
 6. **Auto-archive** → referência explícita ao preserve Step 6 (CLAUDE-Archive.md).
 7. **Vault Sessões/ path** → verificado, existe em `/home/lincoln/obsidian-vault/Áreas/Dev/Projetos/vps-setup/Sessões/`.
+
+### Review v3
+
+8. **Profile NÃO é global via memory/** → Claude Code carrega memória por escopo de projeto. `user_profile.md` em `-home-lincoln/memory/` é invisível em outros projetos. **Correção:** profile estratégico vive em `~/.claude/CLAUDE.md` (user-level), que é carregado em TODA sessão.
+9. **Hook regex inconsistente** → dois patterns com ancoragem diferente. **Correção:** unificado com `\s*[.!?]?\s*$` em todos os padrões.
+10. **Napkin "max 10 por categoria"** → não é regra do napkin skill original. **Correção:** removido o limite. Marcado como decisão de design explícita.
