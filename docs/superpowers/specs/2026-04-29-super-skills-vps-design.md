@@ -16,15 +16,15 @@ A VPS já tem 80% do que o sistema de Super Skills propõe, mas de forma fragmen
 
 | Bucket | Conteúdo | Sistema | Regra |
 |---|---|---|---|
-| **Profile** | Foco atual, decisões pendentes, preferências | `memory/profile.md` | Lido toda sessão. Mutável. < 50 linhas. |
+| **Profile** | Foco atual, decisões pendentes, preferências | Global: `~/.claude/projects/-home-lincoln/memory/user_profile.md` (ampliar seção existente) | Lido toda sessão. Mutável. < 50 linhas. |
 | **Knowledge** | Fatos imutáveis: arquitetura, configs, runbooks | `CLAUDE.md` + `memory/project_*.md` + `memory/reference_*.md` | Atualizado via preserve. Consultado quando relevante. |
 | **Session Log** | O que aconteceu numa sessão — contexto temporal | `CC-Session-Logs/` + `context-mode` FTS5 | Auto-salvo via compress. Buscável via ctx_search. |
-| **Feedback** | Lições aprendidas, "do instead", padrões | `memory/feedback_*.md` + `.claude/napkin.md` | Acumulado ao longo do tempo. Napkin re-priorizado a cada sessão. |
+| **Feedback** | Lições aprendidas, "do instead", padrões | `memory/feedback_*.md` + `.claude/napkin.md` | Acumulado ao longo do tempo. Napkin editado manualmente via `/end-session`. |
 
 ### Mudanças concretas
 
-- `memory/MEMORY.md` — primeira entrada aponta para `profile.md`
-- `memory/profile.md` — novo arquivo (Seção 3 abaixo)
+- `~/.claude/projects/-home-lincoln/memory/user_profile.md` — ampliar com seções de Foco Atual e Decisões Pendentes
+- `~/.claude/projects/-home-lincoln/memory/MEMORY.md` — adicionar entrada para o profile ampliado
 - Nenhum sistema novo ou migração — só regras claras de governança
 
 ---
@@ -41,11 +41,12 @@ A VPS já tem 80% do que o sistema de Super Skills propõe, mas de forma fragmen
 /end-session
   1. [preserve]  Auto-detecta mudanças (git diff, CLAUDE.md atual, tarefas)
                 Preserva TUDO por default — só mostra resumo do que salvou
-                Se CLAUDE.md > 280 linhas → auto-archive
+                Se CLAUDE.md > 280 linhas → auto-archive (move seções antigas para CLAUDE-Archive.md conforme lógica do preserve Step 6)
 
   2. [napkin]   Pergunta: "Alguma lição desta sessão?"
-                Se sim → adiciona ao napkin com data + "Do instead"
+                Se sim → edita {project_root}/.claude/napkin.md diretamente (adiciona item com data + "Do instead", mantém max 10 por categoria, remove itens mais antigos se cheio)
                 Se não → pula
+                Nota: skill napkin (~/.claude/skills/napkin/) já lê o .claude/napkin.md a cada sessão e escreve continuamente durante o trabalho. O end-session só garante captura final se houver lição não registrada.
 
   3. [compress] Gera session log com tudo
                 Dual-write: local (CC-Session-Logs/) + vault (Sessões/)
@@ -76,16 +77,21 @@ O preserve auto-detecta sem perguntar:
 
 ---
 
-## 3. Profile.md — Memória Estratégica
+## 3. Profile — Memória Estratégica Global
 
-**Arquivo:** `/home/lincoln/.claude/projects/-home-lincoln-vps-setup/memory/profile.md`
+**Arquivo:** `/home/lincoln/.claude/projects/-home-lincoln/memory/user_profile.md` (já existe, ampliar)
+
+O profile é **global** (não por-projeto). Toda sessão em qualquer projeto lê o mesmo profile. Já existe com conteúdo básico — ampliar com seções estratégicas.
 
 ```markdown
 ---
-name: Perfil Estratégico
-description: Foco atual, decisões pendentes, prioridades — lido toda sessão
+name: user_profile
+description: Lincoln's role, preferences, and strategic focus — read every session
 type: user
 ---
+
+## Perfil
+[conteúdo existente: desenvolvedor, VPS Contabo, português BR, etc.]
 
 ## Foco Atual
 - [1-2 projetos/áreas ativos com contexto mínimo]
@@ -93,18 +99,16 @@ type: user
 ## Decisões Pendentes
 - [Decisões abertas que futuras sessões precisam saber]
 
-## Preferências de Trabalho
-- [Respostas a perguntas que o Claude faz toda sessão]
-
 ## Última Atualização: YYYY-MM-DD
 ```
 
 ### Governação
 
-- `/end-session` atualiza automaticamente se houver mudanças
+- `/end-session` atualiza automaticamente se houver mudanças em foco ou decisões
 - Mantém < 50 linhas — itens resolvidos saem
-- Referenciado no `MEMORY.md` como primeira entrada
+- Referenciado no `MEMORY.md` global (`~/.claude/projects/-home-lincoln/memory/MEMORY.md`)
 - Seções vazias = sem mudança desde última atualização
+- **Não é por-projeto** — decisões de foco são globais, afetam todos os projetos
 
 ---
 
@@ -116,7 +120,7 @@ type: user
 
 **Arquivo:** `.claude/settings.json` (projeto) — adicionar ao array `hooks.UserPromptSubmit`
 
-**Padrões detectados:** `tchau`, `bye`, `sair`, `fim`, `encerrar`, `até`, `goodbye`, `done for today`, `isso é tudo`, `por hoje é só`
+**Padrões detectados (regex com boundary, final da mensagem):** `\b(tchau|bye|sair|encerrar|goodbye)\s*[.!?]?\s*$` e `\b(fim|até mais|done for today|isso é tudo|por hoje é só)\b` — detecta apenas padrões de despedida no final da mensagem, evitando falsos positivos como "fim de semana" ou "até que".
 
 **Comportamento:** Exibe mensagem sugerindo `/end-session`. Não bloqueia — o usuário pode ignorar.
 
@@ -132,12 +136,17 @@ type: user
 
 **Arquivo:** `~/.claude/commands/context.md`
 
+**Bloqueador conhecido:** `personal-data-connectors` tem `ModuleNotFoundError: No module named 'azure'`. Antes de implementar o skill, é preciso:
+1. Verificar CLI args reais com `python main.py --help` (após fixar deps)
+2. Confirmar quais pipelines existem e seus nomes
+
 ```
 /context
-  1. Roda python main.py --pipeline daily no personal-data-connectors
-  2. Lê os .md gerados em /home/lincoln/obsidian-vault/.raw/
-  3. Indexa no context-mode FTS5 (ctx_index)
-  4. Confirma: "Dados indexados. Use ctx_search para consultar."
+  1. Verifica se personal-data-connectors está operacional (deps instaladas)
+  2. Roda o pipeline de contexto diário (CLI args TBD — verificar após fix deps)
+  3. Lê os .md gerados em /home/lincoln/obsidian-vault/.raw/
+  4. Indexa no context-mode FTS5 (ctx_index)
+  5. Confirma: "Dados indexados. Use ctx_search para consultar."
 ```
 
 **Dados disponíveis via ctx_search:**
@@ -160,7 +169,7 @@ Transformar o personal-data-connectors num MCP server com tools: `search_calenda
 | # | O quê | Arquivo | Esforço |
 |---|---|---|---|
 | 1 | `/end-session` skill | `~/.claude/commands/end-session.md` | 1-2h |
-| 2 | `profile.md` | `memory/profile.md` + `MEMORY.md` update | 15min |
+| 2 | Profile ampliado | `~/.claude/projects/-home-lincoln/memory/user_profile.md` + `MEMORY.md` update | 15min |
 | 3 | Hook de sugestão | `.claude/settings.json` hooks | 15min |
 | 4 | `/context` skill | `~/.claude/commands/context.md` | 30min |
 
@@ -173,3 +182,17 @@ Transformar o personal-data-connectors num MCP server com tools: `search_calenda
 - MCP server para personal-data-connectors (Nível 2)
 - Loop explícito de self-improvement de skills
 - Integração com Hermes Agent
+
+---
+
+## Notas de Correção (Review v2)
+
+Correções aplicadas após review do usuário:
+
+1. **Profile** → global (`~/.claude/projects/-home-lincoln/memory/user_profile.md`), não por-projeto. Amplia arquivo existente.
+2. **`python main.py --pipeline daily`** → CLI args não verificados. Pipeline tem deps quebradas (`azure` module). Skill marcado com bloqueador.
+3. **Napkin** → skill existe em `~/.claude/skills/napkin/` (lê/escreve `.claude/napkin.md` continuamente). `/end-session` só garante captura final.
+4. **"Napkin re-priorizado a cada sessão"** → removido da tabela de buckets. Napkin é curado pelo skill durante o trabalho, não re-priorizado.
+5. **Hook regex** → adicionado boundary e detecção no final da mensagem para evitar falsos positivos.
+6. **Auto-archive** → referência explícita ao preserve Step 6 (CLAUDE-Archive.md).
+7. **Vault Sessões/ path** → verificado, existe em `/home/lincoln/obsidian-vault/Áreas/Dev/Projetos/vps-setup/Sessões/`.
